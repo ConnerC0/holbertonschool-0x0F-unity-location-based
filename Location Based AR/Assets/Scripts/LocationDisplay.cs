@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using UnityEditor;
 using UnityEngine.Android;
 
 public class LocationDisplay : MonoBehaviour
@@ -52,42 +53,34 @@ public class LocationDisplay : MonoBehaviour
         UpdateLocationText();
     }
 
-    private void UpdateLocationText()
-    {
-        if (Input.location.status == LocationServiceStatus.Running)
-        {
-            LocationInfo location = Input.location.lastData;
-            latitudeText.text = $"{location.latitude}";
-            longitudeText.text = $"{location.longitude}";
-            altitudeText.text = $"{location.altitude}";
-        }
-    }
-
     private void OnDestroy()
     {
         Input.location.Stop();
     }
-    
+
+    public TextMeshProUGUI storedLocationText;
     public void StoreCurrentLocation()
     {
         if (Input.location.status == LocationServiceStatus.Running)
         {
             storedLocation = Input.location.lastData;
-            Debug.Log($"Stored location: Latitude = {storedLocation.latitude}, Longitude = {storedLocation.longitude}, Altitude = {storedLocation.altitude}");
+            storedLocationText.text = $"{storedLocation}";
+            Debug.Log(
+                $"Stored location: Latitude = {storedLocation.latitude}, Longitude = {storedLocation.longitude}, Altitude = {storedLocation.altitude}");
         }
         else
         {
             Debug.LogError("Location services are not running. Cannot store the current location.");
         }
     }
-    
+
     public void CalculateDistance()
     {
         if (Input.location.status == LocationServiceStatus.Running)
         {
             LocationInfo currentLocation = Input.location.lastData;
             float distance = CalculateDistanceBetweenCoordinates(storedLocation, currentLocation);
-            distanceText.text = $"Distance: {distance} meters";
+            distanceText.text = $"{distance} meters";
         }
         else
         {
@@ -109,4 +102,29 @@ public class LocationDisplay : MonoBehaviour
 
         return earthRadius * c;
     }
+
+    private void UpdateLocationText()
+    {
+        if (Input.location.status == LocationServiceStatus.Running)
+        {
+            LocationInfo location = Input.location.lastData;
+            latitudeText.text = $"{location.latitude}";
+            longitudeText.text = $"{location.longitude}";
+            altitudeText.text = $"{location.altitude}";
+        }
+    }
+
+    private Vector2 GPSPosition;
+    internal Vector3 UnityLocation;
+    public TextMeshProUGUI conversionText;
+    public void GPSConversion()
+    {
+        if (Input.location.status == LocationServiceStatus.Running)
+        {
+            GPSPosition = new Vector2(Input.location.lastData.latitude, Input.location.lastData.longitude);
+            UnityLocation = GPSEncoder.GPSToUCS(GPSPosition);
+            conversionText.text = $"Unity Local Position:{UnityLocation}";
+        }
+    }
+
 }
