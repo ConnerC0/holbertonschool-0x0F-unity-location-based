@@ -3,6 +3,8 @@ using TMPro;
 using System.Collections;
 using UnityEditor;
 using UnityEngine.Android;
+using UnityEngine.UI;
+using UnityEngine.XR.ARFoundation;
 
 public class LocationDisplay : MonoBehaviour
 {
@@ -11,6 +13,16 @@ public class LocationDisplay : MonoBehaviour
     public TextMeshProUGUI altitudeText;
     public TextMeshProUGUI distanceText;
     private LocationInfo storedLocation;
+    public LocationInfo currentlocation;
+    private Vector2 GPSPosition;
+    internal Vector3 UnityLocation;
+    public TextMeshProUGUI conversionText;
+    public GameObject objectToSpawn;
+    public float distanceFromCamera = 5f; // Set the distance from the camera
+
+    public ARSessionOrigin arSessionOrigin;
+    public Camera arCamera;
+    
 
     private IEnumerator Start()
     {
@@ -50,7 +62,13 @@ public class LocationDisplay : MonoBehaviour
 
     private void Update()
     {
-        UpdateLocationText();
+        if (Input.location.status == LocationServiceStatus.Running)
+        {
+            currentlocation = Input.location.lastData;
+            latitudeText.text = $"{currentlocation.latitude}";
+            longitudeText.text = $"{currentlocation.longitude}";
+            altitudeText.text = $"{currentlocation.altitude}";
+        }
     }
 
     private void OnDestroy()
@@ -64,7 +82,7 @@ public class LocationDisplay : MonoBehaviour
         if (Input.location.status == LocationServiceStatus.Running)
         {
             storedLocation = Input.location.lastData;
-            storedLocationText.text = $"{storedLocation}";
+            storedLocationText.text = $"Longitude: {storedLocation.longitude}, Latitude:{storedLocation.latitude}, Altitude:{storedLocation.altitude}";
             Debug.Log(
                 $"Stored location: Latitude = {storedLocation.latitude}, Longitude = {storedLocation.longitude}, Altitude = {storedLocation.altitude}");
         }
@@ -102,28 +120,27 @@ public class LocationDisplay : MonoBehaviour
 
         return earthRadius * c;
     }
-
-    private void UpdateLocationText()
-    {
-        if (Input.location.status == LocationServiceStatus.Running)
-        {
-            LocationInfo location = Input.location.lastData;
-            latitudeText.text = $"{location.latitude}";
-            longitudeText.text = $"{location.longitude}";
-            altitudeText.text = $"{location.altitude}";
-        }
-    }
-
-    private Vector2 GPSPosition;
-    internal Vector3 UnityLocation;
-    public TextMeshProUGUI conversionText;
+    
     public void GPSConversion()
     {
         if (Input.location.status == LocationServiceStatus.Running)
         {
-            GPSPosition = new Vector2(Input.location.lastData.latitude, Input.location.lastData.longitude);
+            GPSPosition = new Vector2(Input.location.lastData.longitude, Input.location.lastData.latitude);
             UnityLocation = GPSEncoder.GPSToUCS(GPSPosition);
             conversionText.text = $"Unity Local Position:{UnityLocation}";
+        }
+    }
+    
+    public void SpawnGameObjectAtARDeviceLocation(string labelText)
+    {
+        Vector3 spawnPosition = arCamera.transform.position + arCamera.transform.forward * distanceFromCamera;
+        GameObject spawnedObject = Instantiate(objectToSpawn, spawnPosition, Quaternion.identity);
+        spawnedObject.transform.SetParent(null);
+        
+        TextMeshProUGUI label = spawnedObject.GetComponentInChildren<TextMeshProUGUI>();
+        if (label != null)
+        {
+            label.text = labelText;
         }
     }
 
